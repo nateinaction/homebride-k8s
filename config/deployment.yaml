@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: homebridge
+  namespace: homebridge
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: homebridge
+  template:
+    metadata:
+      labels:
+        app: homebridge
+    spec:
+      containers:
+      - name: homebridge
+        image: nateinaction/homebridge@sha256:fcb65c742dc47efd58ea3c7936eb3cea1485bbba9f4e9e6267e61501cbd2af23
+        env:
+        - name: TZ
+          value: America/Chicago
+        ports:
+        - containerPort: 8581
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 8581
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        volumeMounts:
+        - name: config
+          mountPath: /secrets/
+          readOnly: false
+        - name: homebridge
+          mountPath: /homebridge/
+      volumes:
+      - name: config
+        secret:
+          secretName: homebridge
+      - name: homebridge
+        ephemeral:
+          volumeClaimTemplate:
+            spec:
+              accessModes: [ "ReadWriteOnce" ]
+              storageClassName: "local-path"
+              resources:
+                requests:
+                  storage: 1Gi
